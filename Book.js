@@ -9,6 +9,7 @@ class Book {
     this.favorite = book?.favorite || '';
     this.fileCover = book?.fileCover || '';
     this.fileName = book?.fileName || '';
+    this.fileBook = book?.fileBook || '';
   }
 }
 
