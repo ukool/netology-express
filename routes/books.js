@@ -1,111 +1,94 @@
-const fs = require('fs');
 const express = require('express');
-const { bookUploader } = require('../middleware/book-uploader');
 const { books } = require('../store/books');
 const { Book } = require('../Book');
 
 const router = express.Router();
 
-const getBookDataFromRequest = ({ body }) => ({
-  title: body.title || '',
-  description: body.description || '',
-  authors: body.authors || '',
-  favorite: body.favorite || '',
-  fileCover: body.fileCover || '',
-  fileName: body.fileName || '',
-  fileBook: body.fileBook || '',
-});
-
 const findBookIndex = (id) => books.findIndex((book) => book.id === id);
 
 router.get('/', (req, res) => {
-  res.json(books);
+  res.render('book/index', {
+    title: 'Книги',
+    books,
+  });
 });
 
-router.post(
-  '/',
-  bookUploader.single('book'),
-  (req, res) => {
-    let fileBook = '';
+router.get('/view/:id', (req, res) => {
+  const index = findBookIndex(req.params.id);
 
-    if (req.file) {
-      fileBook = req.file.path;
-    }
-
-    const bookData = getBookDataFromRequest(req);
-    const book = new Book(bookData);
-    book.fileBook = fileBook;
-
-    books.push(book);
-
-    res.status(201);
-    res.json(book);
-  },
-);
-
-router.get('/:id', (req, res) => {
-  const bookIndex = findBookIndex(req.params.id);
-
-  if (bookIndex !== -1) {
-    res.json(books[bookIndex]);
-  } else {
-    res.status(404);
-    res.json('Книга не найдена');
+  if (index === -1) {
+    res.redirect('/404');
   }
+
+  const book = books[index];
+  res.render('book/view', {
+    title: 'Книги',
+    book,
+  });
 });
 
-router.put(
-  '/:id',
-  bookUploader.single('book'),
-  async (req, res) => {
-    const bookIndex = findBookIndex(req.params.id);
+router.get('/update/:id', (req, res) => {
+  const index = findBookIndex(req.params.id);
 
-    if (bookIndex !== -1) {
-      const bookData = getBookDataFromRequest(req);
-      const book = books[bookIndex];
-      let { fileBook } = book;
-
-      if (book.fileBook && req?.file?.path) {
-        fileBook = req.file.path;
-        await fs.promises.unlink(book.fileBook);
-      }
-
-      bookData.fileBook = fileBook;
-
-      books[bookIndex] = {
-        ...books[bookIndex],
-        ...bookData,
-      };
-
-      res.json(books[bookIndex]);
-    } else {
-      res.status(404);
-      res.json('Книга не найдена');
-    }
-  },
-);
-
-router.delete('/:id', (req, res) => {
-  const bookIndex = findBookIndex(req.params.id);
-
-  if (bookIndex !== -1) {
-    books.splice(bookIndex, 1);
-    res.json(true);
-  } else {
-    res.status(404);
-    res.json('Книга не найдена');
+  if (index === -1) {
+    res.redirect('/404');
   }
+
+  const book = books[index];
+  res.render('book/update', {
+    title: book.title ?? 'Книга',
+    book,
+  });
 });
 
-router.get('/:id/download', (req, res) => {
-  const bookIndex = findBookIndex(req.params.id);
-  if (bookIndex !== -1) {
-    const book = books[bookIndex];
-    res.download(book.fileBook);
-  } else {
-    res.status(404);
-    res.json('Книга не найдена');
+router.post('/update/:id', (req, res) => {
+  const index = findBookIndex(req.params.id);
+
+  if (index === -1) {
+    res.redirect('/404');
   }
+
+  const { title, desc, authors } = req.body;
+
+  books[index] = {
+    ...books[index],
+    title,
+    desc,
+    authors,
+  };
+
+  res.redirect(`/books/view/${req.params.id}`);
+});
+
+router.get('/create', (req, res) => {
+  res.render('book/create', {
+    title: 'Добавить книгу',
+    book: { title: '' },
+  });
+});
+
+router.post('/create/', (req, res) => {
+  const bookData = {
+    title: req.body.title,
+    desc: req.body.description,
+    authors: req.body.authors,
+  };
+
+  const book = new Book(bookData);
+  books.push(book);
+
+  res.redirect(`/books/view/${book.id}`);
+});
+
+router.post('/delete/:id', (req, res) => {
+  const bookIndex = findBookIndex(req.params.id);
+
+  if (bookIndex === -1) {
+    res.redirect('/404');
+  }
+
+  books.splice(bookIndex, 1);
+  res.redirect('/books');
 });
 
 module.exports = {
