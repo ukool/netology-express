@@ -1,0 +1,19 @@
+<%- include('../port/layout-start', {title: title}) %>
+
+<h2><%= book.title %></h2>
+
+<h3 class="mt-10">Описание</h3>
+<% if (book.description) { %>
+    <p><%= book.description %></p>
+<% } else { %>
+    <p>Описание отсутствует</p>
+<% } %>
+
+<h3 class="mt-10">Автор</h3>
+
+<% if (book.authors) { %>
+    <p><%= book.authors %></p>
+<% } else { %>
+    <p>Автор не указан</p>
+<% } %>
+<%- include('../port/layout-end') %>
