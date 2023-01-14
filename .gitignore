@@ -1,3 +1,5 @@
 .idea
 .DS_Store
 node_modules
+public/books/*
+!public/books/.gitkeep
